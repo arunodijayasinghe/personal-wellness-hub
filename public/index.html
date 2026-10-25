@@ -11,6 +11,8 @@
     label { display: block; margin-top: 12px; font-weight: bold; }
     input, select, textarea { width: 100%; padding: 8px; margin-top: 4px; box-sizing: border-box; }
     button { margin-top: 16px; padding: 10px 16px; cursor: pointer; }
+    td button { margin-top: 0; padding: 6px 10px; }
+    #cancelBtn { display: none; margin-left: 8px; }
     #message { margin-top: 16px; font-weight: bold; }
     .filters { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 12px; }
     .table-wrap { overflow-x: auto; margin-top: 16px; }
@@ -25,8 +27,10 @@
   <h1>Personal Wellness Hub</h1>
 
   <section>
-    <h2>Add Wellness Log</h2>
+    <h2 id="formTitle">Add Wellness Log</h2>
     <form id="logForm">
+      <input type="hidden" id="log_id">
+
       <label for="category">Category</label>
       <select id="category" required></select>
 
@@ -42,7 +46,8 @@
       <label for="notes">Notes (optional)</label>
       <textarea id="notes" rows="3"></textarea>
 
-      <button type="submit">Save Log</button>
+      <button type="submit" id="submitBtn">Save Log</button>
+      <button type="button" id="cancelBtn">Cancel</button>
     </form>
     <p id="message"></p>
   </section>
@@ -123,7 +128,11 @@
           <td>${esc(l.category)}</td>
           <td>${esc(l.title)}</td>
           <td>${esc(l.amount)} ${esc(l.unit)}</td>
-          <td><button type="button" onclick="viewLog(${l.log_id})">View</button></td>
+          <td>
+            <button type="button" onclick="viewLog(${l.log_id})">View</button>
+            <button type="button" onclick="editLog(${l.log_id})">Edit</button>
+            <button type="button" onclick="deleteLog(${l.log_id})">Delete</button>
+          </td>
         </tr>`).join('');
     }
 
@@ -147,8 +156,52 @@
       box.style.display = 'block';
     }
 
+    function resetForm() {
+      form.reset();
+      document.getElementById('log_id').value = '';
+      document.getElementById('formTitle').textContent = 'Add Wellness Log';
+      document.getElementById('submitBtn').textContent = 'Save Log';
+      document.getElementById('cancelBtn').style.display = 'none';
+      applyLimits();
+    }
+
+    async function editLog(id) {
+      const res = await fetch('/api/logs/' + id);
+      const log = await res.json();
+      if (!res.ok) {
+        message.textContent = 'Error: ' + log.error;
+        return;
+      }
+
+      document.getElementById('log_id').value = log.log_id;
+      document.getElementById('category').value = log.category_id;applyLimits();
+      document.getElementById('title').value = log.title;
+      document.getElementById('amount').value = log.amount;
+      document.getElementById('log_date').value = log.log_date;
+      document.getElementById('notes').value = log.notes || '';
+
+      document.getElementById('formTitle').textContent = 'Edit Wellness Log';
+      document.getElementById('submitBtn').textContent = 'Update Log';
+      document.getElementById('cancelBtn').style.display = 'inline-block';
+      message.textContent = '';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    async function deleteLog(id) {
+      if (!confirm('Delete this log? This cannot be undone.')) return;
+
+      const res = await fetch('/api/logs/' + id, { method: 'DELETE' });
+      const result = await res.json();
+      message.textContent = res.ok ? result.message : 'Error: ' + result.error;
+      document.getElementById('details').style.display = 'none';
+
+      if (document.getElementById('log_id').value == id) resetForm();
+      loadLogs();
+    }
+
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
+      const id = document.getElementById('log_id').value;
       const data = {
         category_id: document.getElementById('category').value,
         title: document.getElementById('title').value,
@@ -157,8 +210,8 @@
         notes: document.getElementById('notes').value
       };
 
-      const res = await fetch('/api/logs', {
-        method: 'POST',
+      const res = await fetch(id ? '/api/logs/' + id : '/api/logs', {
+        method: id ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
       });
@@ -166,18 +219,38 @@
 
       if (res.ok) {
         message.textContent = result.message;
-        form.reset();
+        resetForm();
         loadLogs();
       } else {
         message.textContent = 'Error: ' + result.error;
       }
     });
 
+    document.getElementById('cancelBtn').addEventListener('click', () => {
+      resetForm();
+      message.textContent = '';
+    });
     document.getElementById('search').addEventListener('input', loadLogs);
     document.getElementById('filterCategory').addEventListener('change', loadLogs);
     document.getElementById('sortBy').addEventListener('change', loadLogs);
 
-    loadCategories().then(loadLogs);
+    loadCategories().then(loadLogs);    const LIMITS = { Exercise: [0, 600], Sleep: [0, 24], Water: [0, 30], Meditation: [0, 300], Mood: [1, 10] };
+
+    function applyLimits() {
+      const sel = document.getElementById('category');
+      const name = sel.options[sel.selectedIndex]?.text.split(' (')[0];
+      const [min, max] = LIMITS[name] || [0, 1000];
+      const amt = document.getElementById('amount');
+      amt.min = min;
+      amt.max = max;
+      amt.title = `Enter a value from ${min} to ${max}`;
+    }
+
+    document.getElementById('category').addEventListener('change', applyLimits);
+    document.getElementById('log_date').max = new Date().toLocaleDateString('en-CA');
+    document.getElementById('title').minLength = 2;
+
+    loadCategories().then(() => { applyLimits(); loadLogs(); });
   </script>
 </body>
 </html>

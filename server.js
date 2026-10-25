@@ -17,12 +17,61 @@ app.get('/api/categories', async (req, res) => {
   }
 });
 
+function todayString() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+const LIMITS = {
+  Exercise: [0, 600],
+  Sleep: [0, 24],
+  Water: [0, 30],
+  Meditation: [0, 300],
+  Mood: [1, 10]
+};
+
+// Returns an error message, or null if the data is valid
+async function validateLog(body) {
+  const { category_id, title, amount, log_date, notes } = body;
+
+  if (!category_id || !title || amount === '' || amount === undefined || !log_date) {
+    return 'Category, title, amount and date are required';
+  }
+  if (title.trim().length < 2 || title.trim().length > 100) {
+    return 'Title must be 2 to 100 characters';
+  }
+  const num = Number(amount);
+  if (Number.isNaN(num)) {
+    return 'Amount must be a number';
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(log_date) || Number.isNaN(Date.parse(log_date))) {
+    return 'Date is not valid';
+  }
+  if (log_date > todayString()) {
+    return 'Date cannot be in the future';
+  }
+  if (notes && notes.length > 500) {
+    return 'Notes must be 500 characters or fewer';
+  }
+
+  const [cats] = await pool.query('SELECT name FROM categories WHERE category_id = ?', [category_id]);
+  if (cats.length === 0) {
+    return 'Selected category does not exist';
+  }
+  const [min, max] = LIMITS[cats[0].name] || [0, 1000];
+  if (num < min || num > max) {
+    return `${cats[0].name} amount must be between ${min} and ${max}`;
+  }
+  return null;
+}
+
 // CREATE a new wellness log
 app.post('/api/logs', async (req, res) => {
   const { category_id, title, amount, notes, log_date } = req.body;
 
-  if (!category_id || !title || amount === '' || amount === undefined || !log_date) {
-    return res.status(400).json({ error: 'Category, title, amount and date are required' });
+    const problem = await validateLog(req.body);
+  if (problem) {
+    return res.status(400).json({ error: problem });
   }
 
   try {
@@ -80,7 +129,7 @@ app.get('/api/logs', async (req, res) => {
 app.get('/api/logs/:id', async (req, res) => {
   try {
     const [rows] = await pool.query(
-      `SELECT l.log_id, l.title, l.amount, l.notes, l.log_date, l.created_at,
+      `SELECT l.log_id, l.category_id, l.title, l.amount, l.notes, l.log_date, l.created_at,
               c.name AS category, c.unit
        FROM wellness_logs l
        JOIN categories c ON l.category_id = c.category_id
@@ -95,6 +144,52 @@ app.get('/api/logs/:id', async (req, res) => {
     console.error(err);
     res.status(500).json({ error: 'Could not load the log' });
   }
+});
+
+// UPDATE an existing log
+app.put('/api/logs/:id', async (req, res) => {
+  const { category_id, title, amount, notes, log_date } = req.body;
+
+    const problem = await validateLog(req.body);
+  if (problem) {
+    return res.status(400).json({ error: problem });
+  }
+
+  try {
+    const [result] = await pool.query(
+      `UPDATE wellness_logs
+       SET category_id = ?, title = ?, amount = ?, notes = ?, log_date = ?
+       WHERE log_id = ?`,
+      [category_id, title.trim(), amount, notes || null, log_date, req.params.id]
+    );
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Log not found' });
+    }
+    res.json({ message: 'Log updated successfully' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Could not update the log' });
+  }
+});
+
+// DELETE a log
+app.delete('/api/logs/:id', async (req, res) => {
+  try {
+    const [result] = await pool.query('DELETE FROM wellness_logs WHERE log_id = ?', [req.params.id]);
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Log not found' });
+    }
+    res.json({ message: 'Log deleted successfully' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Could not delete the log' });
+  }
+});
+
+// Handles unexpected errors, such as broken JSON, without crashing the server
+app.use((err, req, res, next) => {
+  console.error(err);
+  res.status(400).json({ error: 'Invalid request data' });
 });
 
 const PORT = process.env.PORT || 3000;
