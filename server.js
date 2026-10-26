@@ -186,6 +186,133 @@ app.delete('/api/logs/:id', async (req, res) => {
   }
 });
 
+// DASHBOARD: totals per category
+app.get('/api/summary', async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT c.category_id, c.name, c.unit,
+              COUNT(l.log_id) AS entries,
+              COALESCE(SUM(l.amount), 0) AS total,
+              COALESCE(AVG(l.amount), 0) AS average
+       FROM categories c
+       LEFT JOIN wellness_logs l ON l.category_id = c.category_id
+       GROUP BY c.category_id, c.name, c.unit
+       ORDER BY c.name`
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Could not load the summary' });
+  }
+});
+
+const TIPS = {
+  Exercise: 'Try a short walk or a stretching session today.',
+  Sleep: 'Keep a regular bedtime and avoid screens before sleep.',
+  Water: 'Keep a water bottle nearby and drink a glass with each meal.',
+  Meditation: 'Even 5 minutes of slow breathing can help you relax.',
+  Mood: 'Take a break outdoors or talk to someone you trust. If you feel low for a long time, consider speaking to a doctor or counsellor.'
+};
+
+// INSIGHTS: compare the last 7 days with the daily goals
+app.get('/api/insights', async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT c.name, c.unit, g.target_amount,
+              COUNT(d.day) AS days_logged,
+              AVG(d.value) AS avg_value
+       FROM categories c
+       JOIN goals g ON g.category_id = c.category_id AND g.period = 'daily'
+       LEFT JOIN (
+         SELECT l.category_id, l.log_date AS day,
+                CASE WHEN c2.name = 'Mood' THEN AVG(l.amount) ELSE SUM(l.amount) END AS value
+         FROM wellness_logs l
+         JOIN categories c2 ON c2.category_id = l.category_id
+         WHERE l.log_date >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
+         GROUP BY l.category_id, l.log_date, c2.name
+       ) d ON d.category_id = c.category_id
+       GROUP BY c.category_id, c.name, c.unit, g.target_amount
+       ORDER BY c.name`
+    );
+
+        const insights = rows.map(r => {
+      const target = Number(r.target_amount);
+      const base = { name: r.name, unit: r.unit, target };
+      if (Number(r.days_logged) === 0) {
+        return { ...base, status: 'info', avg: null, tip: TIPS[r.name] || '' };
+      }
+      const avg = Number(r.avg_value);
+      if (avg < target) {
+        return { ...base, status: 'warning', avg, tip: TIPS[r.name] || '' };
+      }
+      return { ...base, status: 'good', avg, tip: '' };
+    });
+
+    res.json(insights);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Could not load insights' });
+  }
+});
+
+// TODAY: how many logs have today's date
+app.get('/api/today', async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      'SELECT COUNT(*) AS count FROM wellness_logs WHERE log_date = CURDATE()'
+    );
+    res.json({ count: rows[0].count });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Could not load today summary' });
+  }
+});
+
+// WEEKLY: last 7 days for one category
+app.get('/api/weekly', async (req, res) => {
+  const categoryId = req.query.category;
+  if (!categoryId) {
+    return res.status(400).json({ error: 'Category is required' });
+  }
+
+  try {
+    const [cats] = await pool.query('SELECT name, unit FROM categories WHERE category_id = ?', [categoryId]);
+    if (cats.length === 0) {
+      return res.status(404).json({ error: 'Category not found' });
+    }
+
+    // Build the last 7 dates, oldest first
+    const days = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      days.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
+    }
+
+    // Mood is an average score, the other categories are daily totals
+    const isMood = cats[0].name === 'Mood';
+    const [rows] = await pool.query(
+      `SELECT log_date, ${isMood ? 'AVG(amount)' : 'SUM(amount)'} AS value
+       FROM wellness_logs
+       WHERE category_id = ? AND log_date BETWEEN ? AND ?
+       GROUP BY log_date`,
+      [categoryId, days[0], days[6]]
+    );
+
+    const byDate = {};
+    rows.forEach(r => { byDate[r.log_date] = Number(r.value); });
+
+    res.json({
+      category: cats[0].name,
+      unit: cats[0].unit,
+      days: days.map(d => ({ date: d, value: byDate[d] ?? null }))
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Could not load the weekly report' });
+  }
+});
+
 // Handles unexpected errors, such as broken JSON, without crashing the server
 app.use((err, req, res, next) => {
   console.error(err);

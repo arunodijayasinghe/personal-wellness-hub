@@ -4,253 +4,150 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Personal Wellness Hub</title>
-  <style>
-    body { font-family: Arial, sans-serif; max-width: 900px; margin: 30px auto; padding: 0 16px; }
-    h1, h2 { margin-bottom: 8px; }
-    section { margin-bottom: 32px; }
-    label { display: block; margin-top: 12px; font-weight: bold; }
-    input, select, textarea { width: 100%; padding: 8px; margin-top: 4px; box-sizing: border-box; }
-    button { margin-top: 16px; padding: 10px 16px; cursor: pointer; }
-    td button { margin-top: 0; padding: 6px 10px; }
-    #cancelBtn { display: none; margin-left: 8px; }
-    #message { margin-top: 16px; font-weight: bold; }
-    .filters { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 12px; }
-    .table-wrap { overflow-x: auto; margin-top: 16px; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-    th { background: #f0f0f0; }
-    #details { margin-top: 16px; padding: 12px; border: 1px solid #999; display: none; }
-    @media (max-width: 600px) { .filters { grid-template-columns: 1fr; } }
-  </style>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>Personal Wellness Hub</h1>
-
-  <section>
-    <h2 id="formTitle">Add Wellness Log</h2>
-    <form id="logForm">
-      <input type="hidden" id="log_id">
-
-      <label for="category">Category</label>
-      <select id="category" required></select>
-
-      <label for="title">Title</label>
-      <input type="text" id="title" maxlength="100" required>
-
-      <label for="amount">Amount</label>
-      <input type="number" id="amount" min="0" step="0.01" required>
-
-      <label for="log_date">Date</label>
-      <input type="date" id="log_date" required>
-
-      <label for="notes">Notes (optional)</label>
-      <textarea id="notes" rows="3"></textarea>
-
-      <button type="submit" id="submitBtn">Save Log</button>
-      <button type="button" id="cancelBtn">Cancel</button>
-    </form>
-    <p id="message"></p>
-  </section>
-
-  <section>
-    <h2>My Wellness Logs</h2>
-    <div class="filters">
-      <input type="text" id="search" placeholder="Search title or notes...">
-      <select id="filterCategory"></select>
-      <select id="sortBy">
-        <option value="log_date:desc">Newest first</option>
-        <option value="log_date:asc">Oldest first</option>
-        <option value="title:asc">Title A to Z</option>
-        <option value="title:desc">Title Z to A</option>
-        <option value="amount:desc">Amount high to low</option>
-        <option value="amount:asc">Amount low to high</option>
-        <option value="category:asc">Category A to Z</option>
-      </select>
+  <header class="navbar">
+    <div class="nav-inner">
+      <a href="#dashboard" class="brand">Personal Wellness Hub</a>
+      <nav>
+        <a href="#dashboard">Dashboard</a>
+        <a href="#weekly">Weekly</a>
+        <a href="#add">Add Log</a>
+        <a href="#logs">My Logs</a>
+        <a href="#tips">Wellness Tips</a>
+      </nav>
     </div>
+  </header>
 
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Date</th><th>Category</th><th>Title</th><th>Amount</th><th>Actions</th>
-          </tr>
-        </thead>
-        <tbody id="logTable"></tbody>
-      </table>
-    </div>
+  <main class="container">
+    <section id="dashboard">
+          <section id="dashboard">
+      <h2>Dashboard</h2>
+      <div id="dailyTip" class="tip-box"></div>
+      <p class="subtitle">
+        Today you logged <strong id="todayCount">0</strong> entries &middot;
+        Total entries: <strong id="totalEntries">0</strong>
+      </p>
+      <div id="motivation" class="motivation"></div>
+      <div id="summaryCards" class="stats-grid"></div>
+      <h3 class="insights-title">Wellness Insights (last 7 days)</h3>
+      <div id="insights"></div>
+      <p class="disclaimer">
+      ⚠️ General guidance only, not medical advice. If you feel unwell, please speak to a doctor.
+      </p>
+    </section>
+    </section>
 
-    <div id="details"></div>
-  </section>
+        <section id="weekly">
+      <h2>Weekly Report</h2>
+      <p class="subtitle">See your last 7 days for one category.</p>
+      <div class="card">
+        <label for="weeklyCategory">Category</label>
+        <select id="weeklyCategory"></select>
+        <p id="weeklySummary" class="weekly-summary"></p>
+        <div id="weeklyChart" class="bar-chart"></div>
+      </div>
+    </section>
 
-  <script>
-    const form = document.getElementById('logForm');
-    const message = document.getElementById('message');
+    <section id="add">
+      <div class="card">
+        <h2 id="formTitle">Add Wellness Log</h2>
+        <form id="logForm">
+          <input type="hidden" id="log_id">
+          <div class="form-grid">
+            <div>
+              <label for="category">Category</label>
+              <select id="category" required></select>
+            </div>
+            <div>
+              <label for="title">Title</label>
+              <input type="text" id="title" maxlength="100" required>
+            </div>
+            <div>
+              <label for="amount">Amount</label>
+              <input type="number" id="amount" min="0" step="0.01" required>
+            </div>
+            <div>
+              <label for="log_date">Date</label>
+              <input type="date" id="log_date" required>
+            </div>
+            <div class="full">
+              <label for="notes">Notes (optional)</label>
+              <textarea id="notes" rows="3" maxlength="500"></textarea>
+            </div>
+          </div>
+          <div class="actions">
+            <button type="submit" id="submitBtn">Save Log</button>
+            <button type="button" id="cancelBtn" class="btn-secondary">Cancel</button>
+          </div>
+        </form>
+        <p id="message" class="message" aria-live="polite"></p>
+      </div>
+    </section>
 
-    function esc(text) {
-      return String(text ?? '').replace(/[&<>"']/g, c =>
-        ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-    }
+    <section id="logs">
+      <h2>My Wellness Logs</h2>
+      <div class="filters">
+        <input type="text" id="search" placeholder="Search title or notes...">
+        <select id="filterCategory"></select>
+        <select id="sortBy">
+          <option value="log_date:desc">Newest first</option>
+          <option value="log_date:asc">Oldest first</option>
+          <option value="title:asc">Title A to Z</option>
+          <option value="title:desc">Title Z to A</option>
+          <option value="amount:desc">Amount high to low</option>
+          <option value="amount:asc">Amount low to high</option>
+          <option value="category:asc">Category A to Z</option>
+        </select>
+      </div>
 
-    async function loadCategories() {
-      const res = await fetch('/api/categories');
-      const categories = await res.json();
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Date</th><th>Category</th><th>Title</th><th>Amount</th><th>Actions</th></tr>
+          </thead>
+          <tbody id="logTable"></tbody>
+        </table>
+      </div>
 
-      document.getElementById('category').innerHTML = categories
-        .map(c => `<option value="${c.category_id}">${esc(c.name)} (${esc(c.unit)})</option>`)
-        .join('');
+      <div id="details" class="card details"></div>
+    </section>
+        <section id="tips">
+      <h2>Wellness Tips</h2>
+      <p class="subtitle">Simple guidance for each category, with its source.</p>
+      <div class="tips-grid">
+        <div class="card tip-card">
+          <h3>🏃 Exercise</h3>
+          <p>Adults are advised to do 150 to 300 minutes of moderate activity each week, which is about 30 minutes on most days.</p>
+          <p class="source">Source: World Health Organization, physical activity guidelines</p>
+        </div>
+        <div class="card tip-card">
+          <h3>😴 Sleep</h3>
+          <p>Most adults need 7 or more hours of sleep each night. Keep a regular bedtime and avoid screens before sleep.</p>
+          <p class="source">Source: CDC, sleep and sleep disorders</p>
+        </div>
+        <div class="card tip-card">
+          <h3>💧 Water</h3>
+          <p>About 8 glasses a day is a common rule of thumb, but your needs change with weather, activity and body size.</p>
+          <p class="source">Source: Mayo Clinic, how much water to drink daily</p>
+        </div>
+        <div class="card tip-card">
+          <h3>🧘 Meditation</h3>
+          <p>Even 5 to 10 minutes of slow breathing or mindfulness can help you feel calmer.</p>
+          <p class="source">Source: NCCIH, meditation and mindfulness</p>
+        </div>
+        <div class="card tip-card">
+          <h3>😊 Mood</h3>
+          <p>Talking to someone you trust, spending time outdoors and keeping a routine can support your mood. If low mood lasts for weeks, speak to a doctor or counsellor.</p>
+          <p class="source">Source: World Health Organization, mental health</p>
+        </div>
+      </div>
+      <p class="disclaimer">⚠️ General guidance only, not medical advice.</p>
+    </section>
+  </main>
 
-      document.getElementById('filterCategory').innerHTML =
-        '<option value="">All categories</option>' +
-        categories.map(c => `<option value="${c.category_id}">${esc(c.name)}</option>`).join('');
-    }
 
-    async function loadLogs() {
-      const [sort, order] = document.getElementById('sortBy').value.split(':');
-      const params = new URLSearchParams({
-        search: document.getElementById('search').value,
-        category: document.getElementById('filterCategory').value,
-        sort,
-        order
-      });
-
-      const res = await fetch('/api/logs?' + params.toString());
-      const logs = await res.json();
-      const tbody = document.getElementById('logTable');
-
-      if (logs.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5">No logs found.</td></tr>';
-        return;
-      }
-
-      tbody.innerHTML = logs.map(l => `
-        <tr>
-          <td>${esc(l.log_date)}</td>
-          <td>${esc(l.category)}</td>
-          <td>${esc(l.title)}</td>
-          <td>${esc(l.amount)} ${esc(l.unit)}</td>
-          <td>
-            <button type="button" onclick="viewLog(${l.log_id})">View</button>
-            <button type="button" onclick="editLog(${l.log_id})">Edit</button>
-            <button type="button" onclick="deleteLog(${l.log_id})">Delete</button>
-          </td>
-        </tr>`).join('');
-    }
-
-    async function viewLog(id) {
-      const res = await fetch('/api/logs/' + id);
-      const log = await res.json();
-      const box = document.getElementById('details');
-
-      if (!res.ok) {
-        box.innerHTML = '<p>' + esc(log.error) + '</p>';
-      } else {
-        box.innerHTML = `
-          <h3>${esc(log.title)}</h3>
-          <p><b>Category:</b> ${esc(log.category)}</p>
-          <p><b>Amount:</b> ${esc(log.amount)} ${esc(log.unit)}</p>
-          <p><b>Date:</b> ${esc(log.log_date)}</p>
-          <p><b>Notes:</b> ${esc(log.notes) || 'None'}</p>
-          <p><b>Created:</b> ${esc(log.created_at)}</p>
-          <button type="button" onclick="document.getElementById('details').style.display='none'">Close</button>`;
-      }
-      box.style.display = 'block';
-    }
-
-    function resetForm() {
-      form.reset();
-      document.getElementById('log_id').value = '';
-      document.getElementById('formTitle').textContent = 'Add Wellness Log';
-      document.getElementById('submitBtn').textContent = 'Save Log';
-      document.getElementById('cancelBtn').style.display = 'none';
-      applyLimits();
-    }
-
-    async function editLog(id) {
-      const res = await fetch('/api/logs/' + id);
-      const log = await res.json();
-      if (!res.ok) {
-        message.textContent = 'Error: ' + log.error;
-        return;
-      }
-
-      document.getElementById('log_id').value = log.log_id;
-      document.getElementById('category').value = log.category_id;applyLimits();
-      document.getElementById('title').value = log.title;
-      document.getElementById('amount').value = log.amount;
-      document.getElementById('log_date').value = log.log_date;
-      document.getElementById('notes').value = log.notes || '';
-
-      document.getElementById('formTitle').textContent = 'Edit Wellness Log';
-      document.getElementById('submitBtn').textContent = 'Update Log';
-      document.getElementById('cancelBtn').style.display = 'inline-block';
-      message.textContent = '';
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    async function deleteLog(id) {
-      if (!confirm('Delete this log? This cannot be undone.')) return;
-
-      const res = await fetch('/api/logs/' + id, { method: 'DELETE' });
-      const result = await res.json();
-      message.textContent = res.ok ? result.message : 'Error: ' + result.error;
-      document.getElementById('details').style.display = 'none';
-
-      if (document.getElementById('log_id').value == id) resetForm();
-      loadLogs();
-    }
-
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const id = document.getElementById('log_id').value;
-      const data = {
-        category_id: document.getElementById('category').value,
-        title: document.getElementById('title').value,
-        amount: document.getElementById('amount').value,
-        log_date: document.getElementById('log_date').value,
-        notes: document.getElementById('notes').value
-      };
-
-      const res = await fetch(id ? '/api/logs/' + id : '/api/logs', {
-        method: id ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
-      const result = await res.json();
-
-      if (res.ok) {
-        message.textContent = result.message;
-        resetForm();
-        loadLogs();
-      } else {
-        message.textContent = 'Error: ' + result.error;
-      }
-    });
-
-    document.getElementById('cancelBtn').addEventListener('click', () => {
-      resetForm();
-      message.textContent = '';
-    });
-    document.getElementById('search').addEventListener('input', loadLogs);
-    document.getElementById('filterCategory').addEventListener('change', loadLogs);
-    document.getElementById('sortBy').addEventListener('change', loadLogs);
-
-    loadCategories().then(loadLogs);    const LIMITS = { Exercise: [0, 600], Sleep: [0, 24], Water: [0, 30], Meditation: [0, 300], Mood: [1, 10] };
-
-    function applyLimits() {
-      const sel = document.getElementById('category');
-      const name = sel.options[sel.selectedIndex]?.text.split(' (')[0];
-      const [min, max] = LIMITS[name] || [0, 1000];
-      const amt = document.getElementById('amount');
-      amt.min = min;
-      amt.max = max;
-      amt.title = `Enter a value from ${min} to ${max}`;
-    }
-
-    document.getElementById('category').addEventListener('change', applyLimits);
-    document.getElementById('log_date').max = new Date().toLocaleDateString('en-CA');
-    document.getElementById('title').minLength = 2;
-
-    loadCategories().then(() => { applyLimits(); loadLogs(); });
-  </script>
+  <script src="app.js"></script>
 </body>
 </html>
