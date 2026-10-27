@@ -53,6 +53,7 @@ One user has many logs, and one category has many logs.
 ### Add, view and edit logs
 ![Add log](docs/screenshots/06-add-log.png)
 ![Logs](docs/screenshots/07-logs.png)
+![View details](docs/screenshots/13-view.png)
 ![Edit](docs/screenshots/08-edit.png)
 
 ### Validation
