@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - Personal Wellness Hub</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="navbar">
+    <div class="nav-inner">
+      <span class="brand">Personal Wellness Hub</span>
+    </div>
+  </header>
+
+  <main class="container auth-container">
+    <div class="card">
+      <h2 id="authTitle">Log in</h2>
+      <p id="authSubtitle" class="subtitle">Welcome back. Log in to see your wellness logs.</p>
+
+      <form id="authForm">
+        <div id="nameRow" hidden>
+          <label for="name">Name</label>
+          <input type="text" id="name" maxlength="100" autocomplete="name">
+        </div>
+
+        <label for="email">Email</label>
+        <input type="email" id="email" required autocomplete="email">
+
+        <label for="password">Password</label>
+        <input type="password" id="password" required autocomplete="current-password">
+
+        <div class="actions">
+          <button type="submit" id="authBtn">Log in</button>
+        </div>
+      </form>
+
+      <p id="authMessage" class="message" aria-live="polite"></p>
+      <p class="switch-text">
+        <span id="switchText">New here?</span>
+        <a href="#" id="switchLink">Create an account</a>
+      </p>
+    </div>
+  </main>
+
+  <script src="auth.js"></script>
+</body>
+</html>

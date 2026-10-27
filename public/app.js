@@ -1,3 +1,11 @@
+// If the server says "not logged in", send the user to the login page
+const realFetch = window.fetch;
+window.fetch = async (...args) => {
+  const res = await realFetch(...args);
+  if (res.status === 401) window.location.href = '/login.html';
+  return res;
+};
+
 const form = document.getElementById('logForm');
 const message = document.getElementById('message');
 
@@ -317,12 +325,25 @@ document.getElementById('weeklyCategory').addEventListener('change', loadWeekly)
 document.getElementById('log_date').max = new Date().toLocaleDateString('en-CA');
 document.getElementById('title').minLength = 2;
 
-loadCategories().then(() => {
-  applyLimits();
-  loadLogs();
-  loadSummary();
-  showDailyTip();
-  document.getElementById('weeklyCategory').innerHTML = categories
-  .map(c => `<option value="${c.category_id}">${esc(c.name)}</option>`)
-  .join('');
+async function checkLogin() {
+  const res = await fetch('/api/me');
+  if (!res.ok) return false;
+  const user = await res.json();
+  document.getElementById('userName').textContent = 'Hi, ' + user.name;
+  return true;
+}
+
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+  await fetch('/api/logout', { method: 'POST' });
+  window.location.href = '/login.html';
+});
+
+checkLogin().then(loggedIn => {
+  if (!loggedIn) return;
+  loadCategories().then(() => {
+    applyLimits();
+    loadLogs();
+    loadSummary();
+    showDailyTip();
+  });
 });
